@@ -1,0 +1,20 @@
+{
+  "name": "toex",
+  "version": "0.0.1",
+  "description": "A javascript eexpression compiler based on angular-expressions.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tangshuang/toex.git"
+  },
+  "author": "tangshuang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tangshuang/toex/issues"
+  },
+  "homepage": "https://github.com/tangshuang/toex#readme",
+  "dependencies": {
+    "angular-expressions": "^0.3.0"
+  }
+}
