@@ -2,7 +2,7 @@
 
 var parse = require("angular-expressions/lib/parse.js");
 
-function ToeX(scope) {
+function ScopeX(scope) {
   var filters = {};
   var Lexer = parse.Lexer;
   var Parser = parse.Parser;
@@ -37,7 +37,7 @@ function ToeX(scope) {
       var cached;
 
       if (typeof src !== "string") {
-          throw new TypeError("ToeX need a string, but saw '" + typeof src + "'");
+          throw new TypeError("ScopeX need a string, but saw '" + typeof src + "'");
       }
 
       if (!compile.cache) {
@@ -65,23 +65,23 @@ function ToeX(scope) {
   this.scope = scope;
 }
 
-ToeX.prototype.filter = function(name, fn) {
+ScopeX.prototype.filter = function(name, fn) {
   if (!("^[a-zA-Z0-9_\$]+$".test(name))) {
-    throw new Error("unexpected letter in ToeX filter name.");
+    throw new Error("unexpected letter in ScopeX filter name.");
   }
   this.filters[name] = fn;
 };
 
-ToeX.prototype.parse = function(str) {
+ScopeX.prototype.parse = function(str) {
   return this.compile(str)(this.scope || window || global || {});
 };
 
-ToeX.prototype.assign = function(key, value) {
+ScopeX.prototype.assign = function(key, value) {
   if (!("^[a-zA-Z0-9_\$\.\[\]]+$".test(key))) {
-    throw new Error("unexpected letter in ToeX assign key.");
+    throw new Error("unexpected letter in ScopeX assign key.");
   }
   let ev = this.compile(key);
   ev.assign((this.scope || window || global || {}), value);
 };
 
-module.exports = ToeX;
+module.exports = ScopeX;

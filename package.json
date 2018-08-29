@@ -1,19 +1,19 @@
 {
-  "name": "toex",
-  "version": "0.0.1",
+  "name": "scopex",
+  "version": "1.0.0",
   "description": "A javascript eexpression compiler based on angular-expressions.",
   "main": "index.js",
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangshuang/toex.git"
+    "url": "git+https://github.com/tangshuang/scopex.git"
   },
   "author": "tangshuang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tangshuang/toex/issues"
+    "url": "https://github.com/tangshuang/scopex/issues"
   },
-  "homepage": "https://github.com/tangshuang/toex#readme",
+  "homepage": "https://github.com/tangshuang/scopex#readme",
   "dependencies": {
     "angular-expressions": "^0.3.0"
   }
