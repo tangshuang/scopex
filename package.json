@@ -1,9 +1,11 @@
 {
   "name": "scopex",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A javascript eexpression compiler based on angular-expressions.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "jest"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tangshuang/scopex.git"
@@ -16,5 +18,8 @@
   "homepage": "https://github.com/tangshuang/scopex#readme",
   "dependencies": {
     "angular-expressions": "^0.3.0"
+  },
+  "devDependencies": {
+    "jest": "^23.6.0"
   }
 }

@@ -62,26 +62,41 @@ function ScopeX(scope) {
 
   this.filters = filters;
   this.compile = compile;
-  this.scope = scope;
+  this.scope = scope ? scope : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 }
 
 ScopeX.prototype.filter = function(name, fn) {
-  if (!("^[a-zA-Z0-9_\$]+$".test(name))) {
-    throw new Error("unexpected letter in ScopeX filter name.");
-  }
   this.filters[name] = fn;
 };
 
 ScopeX.prototype.parse = function(str) {
-  return this.compile(str)(this.scope || window || global || {});
+  return this.compile(str)(this.scope);
 };
 
 ScopeX.prototype.assign = function(key, value) {
-  if (!("^[a-zA-Z0-9_\$\.\[\]]+$".test(key))) {
-    throw new Error("unexpected letter in ScopeX assign key.");
+  var ev = this.compile(key);
+  ev.assign(this.scope, value);
+};
+
+ScopeX.prototype.interpolate = function(str) {
+  var reg = new RegExp('\{\{(.*?)\}\}(?!\})', 'g');
+  var matches = str.match(reg);
+
+  // if there is no mustache, return the original string
+  if (!matches) {
+    return str;
   }
-  let ev = this.compile(key);
-  ev.assign((this.scope || window || global || {}), value);
+
+  var $this = this;
+  // create a convert function
+  function convert(content) {
+    var exp = content.trim().slice(2, -2);
+    var res = $this.parse(exp);
+    return res;
+  }
+
+  str = str.replace(reg, convert);
+  return str;
 };
 
 module.exports = ScopeX;
