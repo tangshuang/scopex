@@ -90,3 +90,15 @@ describe('Use with Objext', () => {
     expect(flag).toBe(true)
   })
 })
+
+describe('$new', () => {
+  test('new', () => {
+    const scope = new ScopeX({ a: 1 })
+    const newScope = scope.$new()
+    expect(newScope.parse('a')).toBe(1)
+    
+    newScope.parse('a = 2')
+    expect(newScope.parse('a')).toBe(2)
+    expect(scope.parse('a')).toBe(1)
+  })
+})

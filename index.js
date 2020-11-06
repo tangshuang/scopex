@@ -99,4 +99,11 @@ ScopeX.prototype.interpolate = function(str) {
   return str;
 };
 
+ScopeX.prototype.$new = function(nextScope) {
+  var scope = this.scope;
+  var newScope = Object.assign({}, scope, nextScope && typeof nextScope === 'object' ? nextScope : {});
+  
+  return new ScopeX(newScope);
+}
+
 module.exports = ScopeX;
