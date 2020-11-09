@@ -90,7 +90,9 @@ ScopeX.prototype.interpolate = function(str) {
 
 ScopeX.prototype.$new = function(next) {
   var data = Object.assign({}, this.data, next && typeof next === 'object' ? next : {});
-  return new ScopeX(data);
+  var scopex = new ScopeX(data);
+  Object.assign(scopex.filters, this.filters);
+  return scopex;
 };
 
 module.exports = ScopeX;
