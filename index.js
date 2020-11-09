@@ -1,9 +1,8 @@
-"use strict";
+'use strict';
 
-var parse = require("angular-expressions/lib/parse.js");
+var parse = require('angular-expressions/lib/parse.js');
 
-function ScopeX(scope) {
-  var filters = {};
+function ScopeX(data) {
   var Lexer = parse.Lexer;
   var Parser = parse.Parser;
   var parserOptions = {
@@ -21,14 +20,16 @@ function ScopeX(scope) {
       //isIdentifierContinue: undefined //isFunction(identContinue) && identContinue
   };
 
+  var filters = {};
   var lexer = new Lexer({});
   var parser = new Parser(lexer, function getFilter(name) {
       return filters[name];
   }, parserOptions);
+  var cache = {};
 
   /**
    * Compiles src and returns a function that executes src on a target object.
-   * The compiled function is cached under compile.cache[src] to speed up further calls.
+   * The compiled function is cached under cache[src] to speed up further calls.
    *
    * @param {string} src
    * @returns {function}
@@ -36,33 +37,21 @@ function ScopeX(scope) {
   function compile(src) {
       var cached;
 
-      if (typeof src !== "string") {
-          throw new TypeError("ScopeX need a string, but saw '" + typeof src + "'");
+      if (typeof src !== 'string') {
+          throw new TypeError('ScopeX need a string, but saw ' + typeof src);
       }
 
-      if (!compile.cache) {
-          return parser.parse(src);
-      }
-
-      cached = compile.cache[src];
+      cached = cache[src];
       if (!cached) {
-          cached = compile.cache[src] = parser.parse(src);
+          cached = cache[src] = parser.parse(src);
       }
 
       return cached;
   }
 
-  /**
-   * A cache containing all compiled functions. The src is used as key.
-   * Set this on false to disable the cache.
-   *
-   * @type {object}
-   */
-  compile.cache = {};
-
   this.filters = filters;
   this.compile = compile;
-  this.scope = scope ? scope : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+  this.data = data ? data : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 }
 
 ScopeX.prototype.filter = function(name, fn) {
@@ -70,12 +59,12 @@ ScopeX.prototype.filter = function(name, fn) {
 };
 
 ScopeX.prototype.parse = function(str) {
-  return this.compile(str)(this.scope);
+  return this.compile(str)(this.data);
 };
 
 ScopeX.prototype.assign = function(key, value) {
   var ev = this.compile(key);
-  ev.assign(this.scope, value);
+  ev.assign(this.data, value);
 };
 
 ScopeX.prototype.interpolate = function(str) {
@@ -99,11 +88,9 @@ ScopeX.prototype.interpolate = function(str) {
   return str;
 };
 
-ScopeX.prototype.$new = function(nextScope) {
-  var scope = this.scope;
-  var newScope = Object.assign({}, scope, nextScope && typeof nextScope === 'object' ? nextScope : {});
-  
-  return new ScopeX(newScope);
-}
+ScopeX.prototype.$new = function(next) {
+  var data = Object.assign({}, this.data, next && typeof next === 'object' ? next : {});
+  return new ScopeX(data);
+};
 
 module.exports = ScopeX;
