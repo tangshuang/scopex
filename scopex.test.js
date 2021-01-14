@@ -93,12 +93,31 @@ describe('Use with Objext', () => {
 
 describe('$new', () => {
   test('new', () => {
-    const scope = new ScopeX({ a: 1 })
+    const scope = new ScopeX({ a: { b: 1 } })
     const newScope = scope.$new()
+
+    expect(newScope.parse('a.b')).toBe(1)
+
+    newScope.parse('a.b = 2')
+    expect(newScope.parse('a.b')).toBe(2)
+    expect(scope.parse('a.b')).toBe(2) // notice here
+
+    newScope.parse('c = 3')
+    expect(newScope.parse('c')).toBe(3)
+    expect(scope.parse('c')).toBeUndefined() // notice here
+  })
+  test('inherit', () => {
+    const scope = new ScopeX({ a: 1, b: 2 })
+    const newScope = scope.$new({ b: 0 })
     expect(newScope.parse('a')).toBe(1)
-    
-    newScope.parse('a = 2')
-    expect(newScope.parse('a')).toBe(2)
-    expect(scope.parse('a')).toBe(1)
+    expect(newScope.parse('b')).toBe(0)
+
+    newScope.parse('b = 4')
+    expect(newScope.parse('b')).toBe(4)
+    expect(scope.parse('b')).toBe(2) // notice here
+
+    newScope.parse('a = 3')
+    expect(newScope.parse('a')).toBe(3)
+    expect(scope.parse('a')).toBe(3) // notice here, because a is not in $new(...)
   })
 })

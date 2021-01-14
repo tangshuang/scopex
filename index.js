@@ -88,8 +88,34 @@ ScopeX.prototype.interpolate = function(str) {
   return str;
 };
 
-ScopeX.prototype.$new = function(next) {
-  var data = Object.assign({}, this.data, next && typeof next === 'object' ? next : {});
+ScopeX.prototype.$new = function(locals) {
+  var data = {};
+
+  if (locals) {
+    var parent = this.data;
+    var keys = Object.keys(parent).concat(Object.keys(locals));
+    keys.forEach(function(key) {
+      Object.defineProperty(data, key, {
+        get() {
+          return key in locals ? locals[key] : parent[key];
+        },
+        set(value) {
+          if (key in locals) {
+            return locals[key] = value;
+          }
+          else {
+            return parent[key] = value;
+          }
+        },
+        enumerable: true,
+        configurable: true
+      });
+    });
+  }
+  else {
+    Object.assign(data, this.data);
+  }
+
   var scopex = new ScopeX(data);
   Object.assign(scopex.filters, this.filters);
   return scopex;
