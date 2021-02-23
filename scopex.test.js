@@ -121,3 +121,19 @@ describe('$new', () => {
     expect(scope.parse('a')).toBe(3) // notice here, because a is not in $new(...)
   })
 })
+
+describe('function', () => {
+  test('run fn', () => {
+    const x = { get: () => 1 }
+    const scopex = new ScopeX(x)
+    const y = scopex.parse('get()')
+    expect(y).toBe(1)
+  })
+  test('run by $new', () => {
+    const x = { get: () => 1 }
+    const scopex = new ScopeX(x)
+    const scopey = scopex.$new({ b: 2 })
+    const y = scopey.parse('get() + b')
+    expect(y).toBe(3)
+  })
+})
