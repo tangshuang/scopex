@@ -1,6 +1,6 @@
 'use strict';
 
-var parse = require('angular-expressions/lib/parse.js');
+var parse = require('./parse.js');
 
 function ScopeX(data) {
   var Lexer = parse.Lexer;

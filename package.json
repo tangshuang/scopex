@@ -16,9 +16,6 @@
     "url": "https://github.com/tangshuang/scopex/issues"
   },
   "homepage": "https://github.com/tangshuang/scopex#readme",
-  "dependencies": {
-    "angular-expressions": "^1.1.3"
-  },
   "devDependencies": {
     "jest": "^23.6.0",
     "objext": "0.0.5"
