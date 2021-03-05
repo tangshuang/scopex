@@ -19,9 +19,10 @@ function ScopeX(data, options) {
       //isIdentifierStart: undefined, //isFunction(identStart) && identStart,
       //isIdentifierContinue: undefined //isFunction(identContinue) && identContinue
   };
-  var loose = options ? options.loose : false
 
-  var filters = {};
+  var loose = options ? options.loose : false;
+  var filters = options && options.filters ? Object.assign({}, options.filters) : {};
+
   var lexer = new Lexer({});
   var parser = new Parser(lexer, function getFilter(name) {
       return filters[name];
@@ -50,7 +51,7 @@ function ScopeX(data, options) {
       return cached;
   }
 
-  this.options = options
+  this.options = options;
   this.filters = filters;
   this.compile = compile;
   this.data = data ? data : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
