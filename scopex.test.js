@@ -137,3 +137,20 @@ describe('function', () => {
     expect(y).toBe(3)
   })
 })
+
+describe('loose', () => {
+  const top = {
+    a: 1,
+  }
+  const curr = {
+    b: 2
+  }
+  Object.setPrototypeOf(curr, top)
+  expect(curr.a).toBe(1)
+
+  const scop1 = new ScopeX(curr)
+  expect(scop1.parse('a')).toBeUndefined()
+
+  const scop2 = new ScopeX(curr, { loose: true })
+  expect(scop2.parse('a')).toBe(1)
+})
