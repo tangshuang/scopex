@@ -1,6 +1,6 @@
 'use strict';
 
-var parse = require('./parse.js');
+var parse = require('./parser.js');
 
 function ScopeX(data, options) {
   var Lexer = parse.Lexer;

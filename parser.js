@@ -3114,7 +3114,6 @@ ASTCompiler.prototype = {
 			extra +
 			this.watchFns() +
 			"return fn;";
-		console.log(fnString)
 		// eslint-disable-next-line no-new-func
 		var fn = new Function(
 			"$filter",
