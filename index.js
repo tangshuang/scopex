@@ -2,7 +2,7 @@
 
 var parse = require('./parse.js');
 
-function ScopeX(data) {
+function ScopeX(data, options) {
   var Lexer = parse.Lexer;
   var Parser = parse.Parser;
   var parserOptions = {
@@ -19,12 +19,13 @@ function ScopeX(data) {
       //isIdentifierStart: undefined, //isFunction(identStart) && identStart,
       //isIdentifierContinue: undefined //isFunction(identContinue) && identContinue
   };
+  var loose = options ? options.loose : false
 
   var filters = {};
   var lexer = new Lexer({});
   var parser = new Parser(lexer, function getFilter(name) {
       return filters[name];
-  }, parserOptions);
+  }, parserOptions, loose);
   var cache = {};
 
   /**
@@ -49,6 +50,7 @@ function ScopeX(data) {
       return cached;
   }
 
+  this.options = options
   this.filters = filters;
   this.compile = compile;
   this.data = data ? data : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -116,7 +118,7 @@ ScopeX.prototype.$new = function(locals) {
     Object.assign(data, this.data);
   }
 
-  var scopex = new ScopeX(data);
+  var scopex = new ScopeX(data, this.options);
   Object.assign(scopex.filters, this.filters);
   return scopex;
 };

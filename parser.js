@@ -3057,9 +3057,10 @@ function isConstant(ast) {
 	return ast.constant;
 }
 
-function ASTCompiler(astBuilder, $filter) {
+function ASTCompiler(astBuilder, $filter, loose) {
 	this.astBuilder = astBuilder;
-	this.$filter = $filter;
+  this.$filter = $filter;
+  this.$loose = loose
 }
 
 ASTCompiler.prototype = {
@@ -3294,7 +3295,7 @@ ASTCompiler.prototype = {
 									"s",
 									self.or_(
 										self.isNull(self.nonComputedMember("s", ast.name)),
-										self.hasOwnProperty_("s", ast.name)
+										self.has_("s", ast.name)
 									)
 								),
 							function () {
@@ -3349,7 +3350,7 @@ ASTCompiler.prototype = {
 								self.notNull(left),
 								self.or_(
 									self.isNull(member),
-									self.hasOwnProperty_(left, right, ast.computed)
+									self.has_(left, right, ast.computed)
 								)
 							),
 							function () {
@@ -3455,7 +3456,7 @@ ASTCompiler.prototype = {
 							self.and_(
 								self.notNull(left.context),
 								self.or_(
-									self.hasOwnProperty_(left.context, left.name),
+									self.has_(left.context, left.name),
 									self.isNull(
 										self.member(left.context, left.name, left.computed)
 									)
@@ -3625,6 +3626,16 @@ ASTCompiler.prototype = {
 				"(Object.prototype.hasOwnProperty.call(" + obj + ",'" + prop + "'))"
 			);
 		}
+  },
+  hasProperty_: function(obj, prop, computed) {
+    if (computed) {
+			return "(" + prop + " in " + obj + ")";
+		} else {
+			return "('" + prop + "' in " + obj + ")";
+		}
+  },
+  has_: function(obj, prop, computed) {
+    return this.$loose ? this.hasProperty_(obj, prop, computed) : this.hasOwnProperty_(obj, prop, computed)
   },
 	and_: function (expr1, expr2) {
 		return "(" + expr1 + ") && (" + expr2 + ")";
@@ -4182,14 +4193,14 @@ ASTInterpreter.prototype = {
 /**
  * @constructor
  */
-var Parser = function Parser(lexer, $filter, options) {
+var Parser = function Parser(lexer, $filter, options, loose) {
 	this.lexer = lexer;
 	this.$filter = $filter;
 	this.options = options;
 	this.ast = new AST(lexer, options);
 	this.astCompiler = options.csp
 		? new ASTInterpreter(this.ast, $filter)
-		: new ASTCompiler(this.ast, $filter);
+		: new ASTCompiler(this.ast, $filter, loose);
 };
 
 Parser.prototype = {
