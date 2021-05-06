@@ -99,10 +99,10 @@ ScopeX.prototype.$new = function(locals) {
     var keys = Object.keys(parent).concat(Object.keys(locals));
     keys.forEach(function(key) {
       Object.defineProperty(data, key, {
-        get() {
+        get: function() {
           return key in locals ? locals[key] : parent[key];
         },
-        set(value) {
+        set: function(value) {
           if (key in locals) {
             return locals[key] = value;
           }
