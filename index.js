@@ -1,4 +1,18 @@
-;(function() {
+;(function(fn) {
+	const ScopeX = fn();
+	// commonjs
+	if (typeof module !== 'undefined') {
+		module.exports = ScopeX;
+	}
+	// in browser
+	else if (typeof window !== 'undefined') {
+		window.ScopeX = ScopeX;
+	}
+	// in webworker
+	else if (typeof self !== 'undefined') {
+		self.ScopeX = ScopeX;
+	}
+})(function() {
 
 // fork from https://github.com/peerigon/angular-expressions/blob/master/lib/parse.js
 
@@ -4762,17 +4776,6 @@ ScopeX.prototype.$new = function(locals) {
   return scopex;
 };
 
-// commonjs
-if (typeof module !== 'undefined') {
-  module.exports = ScopeX;
-}
-// in browser
-else if (typeof window !== 'undefined') {
-  window.ScopeX = ScopeX;
-}
-// in webworker
-else if (typeof self !== 'undefined') {
-  self.ScopeX = ScopeX;
-}
+return ScopeX;
 
-} ());
+});
