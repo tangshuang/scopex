@@ -95,6 +95,7 @@ describe('$new', () => {
   test('new', () => {
     const scope = new ScopeX({ a: { b: 1 } })
     const newScope = scope.$new()
+    console.log(newScope.data)
 
     expect(newScope.parse('a.b')).toBe(1)
 
@@ -106,8 +107,9 @@ describe('$new', () => {
     expect(newScope.parse('c')).toBe(3)
     expect(scope.parse('c')).toBeUndefined() // notice here
   })
+
   test('inherit', () => {
-    const scope = new ScopeX({ a: 1, b: 2 })
+    const scope = new ScopeX({ a: 1, b: 2, c: { d: 0 } })
     const newScope = scope.$new({ b: 0 })
     expect(newScope.parse('a')).toBe(1)
     expect(newScope.parse('b')).toBe(0)
@@ -118,7 +120,11 @@ describe('$new', () => {
 
     newScope.parse('a = 3')
     expect(newScope.parse('a')).toBe(3)
-    expect(scope.parse('a')).toBe(3) // notice here, because a is not in $new(...)
+    expect(scope.parse('a')).toBe(1) // notice here
+
+    newScope.parse('c.d = 1')
+    expect(newScope.parse('c.d')).toBe(1)
+    expect(scope.parse('c.d')).toBe(1) // notice here
   })
 })
 
@@ -138,19 +144,13 @@ describe('function', () => {
   })
 })
 
-describe('loose', () => {
-  const top = {
-    a: 1,
-  }
-  const curr = {
-    b: 2
-  }
-  Object.setPrototypeOf(curr, top)
-  expect(curr.a).toBe(1)
+describe('$parent', () => {
+  const o = {}
+  Object.defineProperty(o, '$parent', {
+    get: () => 'a',
+  })
 
-  const scop1 = new ScopeX(curr)
-  expect(scop1.parse('a')).toBeUndefined()
-
-  const scop2 = new ScopeX(curr, { loose: true })
-  expect(scop2.parse('a')).toBe(1)
+  const scope = new ScopeX(o, { loose: true })
+  const newScope = scope.$new({})
+  expect(newScope.parse('$parent')).toBe('a')
 })

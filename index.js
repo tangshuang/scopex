@@ -3073,10 +3073,9 @@ function isConstant(ast) {
 	return ast.constant;
 }
 
-function ASTCompiler(astBuilder, $filter, loose) {
+function ASTCompiler(astBuilder, $filter) {
 	this.astBuilder = astBuilder;
   this.$filter = $filter;
-  this.$loose = loose
 }
 
 ASTCompiler.prototype = {
@@ -3633,15 +3632,15 @@ ASTCompiler.prototype = {
 	or_: function (expr1, expr2) {
 		return "(" + expr1 + ") || (" + expr2 + ")";
 	},
-	hasOwnProperty_: function (obj, prop, computed) {
-		if (computed) {
-			return "(Object.prototype.hasOwnProperty.call(" + obj + "," + prop + "))";
-		} else {
-			return (
-				"(Object.prototype.hasOwnProperty.call(" + obj + ",'" + prop + "'))"
-			);
-		}
-  },
+	// hasOwnProperty_: function (obj, prop, computed) {
+	// 	if (computed) {
+	// 		return "(Object.prototype.hasOwnProperty.call(" + obj + "," + prop + "))";
+	// 	} else {
+	// 		return (
+	// 			"(Object.prototype.hasOwnProperty.call(" + obj + ",'" + prop + "'))"
+	// 		);
+	// 	}
+  // },
   hasProperty_: function(obj, prop, computed) {
     if (computed) {
 			return "(" + prop + " in " + obj + ")";
@@ -3650,7 +3649,12 @@ ASTCompiler.prototype = {
 		}
   },
   has_: function(obj, prop, computed) {
-    return this.$loose ? this.hasProperty_(obj, prop, computed) : this.hasOwnProperty_(obj, prop, computed)
+    // return this.hasOwnProperty_(obj, prop, computed)
+
+    // here is what I changed in fork
+    // in original library, the pareser can only parse properties which is own properties, this make it impossible to read from prototype
+    // so I changed it
+    return this.hasProperty_(obj, prop, computed)
   },
 	and_: function (expr1, expr2) {
 		return "(" + expr1 + ") && (" + expr2 + ")";
@@ -4208,14 +4212,14 @@ ASTInterpreter.prototype = {
 /**
  * @constructor
  */
-var Parser = function Parser(lexer, $filter, options, loose) {
+var Parser = function Parser(lexer, $filter, options) {
 	this.lexer = lexer;
 	this.$filter = $filter;
 	this.options = options;
 	this.ast = new AST(lexer, options);
 	this.astCompiler = options.csp
 		? new ASTInterpreter(this.ast, $filter)
-		: new ASTCompiler(this.ast, $filter, loose);
+		: new ASTCompiler(this.ast, $filter);
 };
 
 Parser.prototype = {
@@ -4640,21 +4644,10 @@ function $ParseProvider() {
 	];
 }
 
-
-function assign(a, b) {
-  for (var i in b) {
-    if (Object.prototype.hasOwnProperty.call(b, i)) {
-      a[i] = b[i];
-    }
-  }
-  return a;
-}
-
 /**
  *
  * @param {object} data
  * @param {object} options
- * @param {boolean} options.loose whether to use in operator to check a property in an object
  */
 function ScopeX(data, options) {
   var parserOptions = {
@@ -4672,13 +4665,12 @@ function ScopeX(data, options) {
       //isIdentifierContinue: undefined //isFunction(identContinue) && identContinue
   };
 
-  var loose = options ? options.loose : false;
   var filters = options && options.filters ? assign({}, options.filters) : {};
 
   var lexer = new Lexer({});
   var parser = new Parser(lexer, function getFilter(name) {
       return filters[name];
-  }, parserOptions, loose);
+  }, parserOptions);
   var cache = {};
 
   /**
@@ -4744,37 +4736,32 @@ ScopeX.prototype.interpolate = function(str) {
 };
 
 ScopeX.prototype.$new = function(locals) {
-  var data = {};
-
-  if (locals) {
-    var parent = this.data;
-    var keys = Object.keys(parent).concat(Object.keys(locals));
-    keys.forEach(function(key) {
-      Object.defineProperty(data, key, {
-        get: function() {
-          return key in locals ? locals[key] : parent[key];
-        },
-        set: function(value) {
-          if (key in locals) {
-            return locals[key] = value;
-          }
-          else {
-            return parent[key] = value;
-          }
-        },
-        enumerable: true,
-        configurable: true
-      });
-    });
-  }
-  else {
-    assign(data, this.data);
-  }
-
+  locals = locals || {};
+  var data = assign({}, locals);
+  setPrototypeOf(data, this.data);
   var scopex = new ScopeX(data, this.options);
   assign(scopex.filters, this.filters);
   return scopex;
 };
+
+
+function assign(a, b) {
+  for (var i in b) {
+    if (Object.prototype.hasOwnProperty.call(b, i)) {
+      a[i] = b[i];
+    }
+  }
+  return a;
+}
+
+function setPrototypeOf(obj, proto) {
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(obj, proto);
+  }
+  else {
+    obj.__proto__ = proto;
+  }
+}
 
 return ScopeX;
 
