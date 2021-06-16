@@ -1,8 +1,10 @@
 ;(function(fn) {
 	const ScopeX = fn();
 	// commonjs
-	if (typeof module !== 'undefined') {
-		module.exports = ScopeX;
+	if (typeof exports !== 'undefined') {
+		exports.default = ScopeX;
+		exports.ScopeX = ScopeX;
+		exports.__esModule = true;
 	}
 	// in browser
 	else if (typeof window !== 'undefined') {

@@ -11,10 +11,11 @@ npm install --save scopex
 ## Usage
 
 ```js
-var ScopeX = require('scopex')
-var scope = new ScopeX(context)
-var normalExpressionResult = scope.parse('1 + 1') // 2
-var scopeExpressionResult = scope.parse('key + 1') // if context.key = 1, result is 2, here key stands for context.key
+const { ScopeX } = require('scopex') // or: import ScopeX from 'scopex'
+
+const scope = new ScopeX(context)
+const normalExpressionResult = scope.parse('1 + 1') // 2
+const scopeExpressionResult = scope.parse('key + 1') // if context.key = 1, result is 2, here key stands for context.key
 ```
 
 ## context
@@ -22,7 +23,7 @@ var scopeExpressionResult = scope.parse('key + 1') // if context.key = 1, result
 A context is a js object, if you not passed, it will use `global` or `window` as optional. i.e.
 
 ```js
-var scope = new ScopeX() // global or window passed as default
+const scope = new ScopeX() // global or window passed as default
 ```
 
 What's a scope? It is an object which will be used as master in parsed string, for example:
@@ -66,7 +67,7 @@ scope.assign('members[1].name', 'tomy') // conteext.members[1].name = tomy, even
 Transform a string which contains '{{exp}}' to truthy value string. i.e.
 
 ```js
-let output = scope.interpolate(`
+const output = scope.interpolate(`
   <div>{{title}}</div>
   <span>{{name}}</span>
 `)
