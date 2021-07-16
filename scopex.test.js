@@ -1,4 +1,4 @@
-const ScopeX = require('./index')
+const { ScopeX } = require('./index')
 const { Objext } = require('objext')
 
 describe('Normal Usage', () => {
@@ -95,7 +95,6 @@ describe('$new', () => {
   test('new', () => {
     const scope = new ScopeX({ a: { b: 1 } })
     const newScope = scope.$new()
-    console.log(newScope.data)
 
     expect(newScope.parse('a.b')).toBe(1)
 
@@ -144,13 +143,49 @@ describe('function', () => {
   })
 })
 
-describe('$parent', () => {
-  const o = {}
-  Object.defineProperty(o, '$parent', {
-    get: () => 'a',
-  })
+describe('not enum keys', () => {
+  test('$parent', () => {
+    const o = {}
+    Object.defineProperty(o, '$parent', {
+      get: () => 'a',
+    })
 
-  const scope = new ScopeX(o, { loose: true })
-  const newScope = scope.$new({})
-  expect(newScope.parse('$parent')).toBe('a')
+    const scope = new ScopeX(o)
+    const newScope = scope.$new({})
+    expect(newScope.parse('$parent')).toBe('a')
+  })
+})
+
+describe('createScope', () => {
+  test('normal', () => {
+    const vars = {
+      a: {
+        s: 1,
+      },
+      b: {
+        s: 2,
+        z: 3
+      },
+      c: {
+        s: 3,
+        z: 4,
+        w: 5,
+      },
+    }
+    const chain = ['a', 'b', 'c']
+
+    const scope = ScopeX.createScope(vars, chain)
+    expect(scope.parse('s')).toBe(1)
+    expect(scope.parse('z')).toBe(3)
+    expect(scope.parse('w')).toBe(5)
+
+    scope.parse('s = 10')
+    expect(vars.a.s).toBe(10)
+
+    scope.parse('z = 13')
+    expect(vars.b.z).toBe(13)
+
+    scope.parse('t = 5')
+    expect(vars.a.t).toBe(5)
+  })
 })
