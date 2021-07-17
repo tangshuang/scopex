@@ -2633,21 +2633,28 @@ function setPrototypeOf(obj, proto) {
   return obj
 }
 
+function uniqueArray(items) {
+  return items.reduce(function(res, key) {
+    if (res.indexOf(key) > -1) {
+      return res;
+    }
+    res.push(key);
+    return res;
+  }, []);
+}
+
 ScopeX.createScope = createScope;
 
 /**
  * @param {object} scopeVars
- * @param {string[]} chain
- * @param {object} getters
+ * @param {object[]|string[]} chain
  * @returns new ScopeX()
  */
 function createScope(scopeVars, options) {
   options = options || {};
   var chain = options.chain;
-  var getters = options.getters;
   var opts = assign({}, options);
   delete opts.chain;
-  delete opts.getters;
 
   function ensureValue(value, target) {
     if (value && typeof value === 'function') {
@@ -2656,19 +2663,84 @@ function createScope(scopeVars, options) {
     return value;
   }
 
-  var data = scopeVars;
+  var data = null;
+
+  var deps = [];
+  var collecting = false;
+
+  function inheritFrom(child, parent) {
+    return new Proxy({}, {
+      get(_, key) {
+        if (collecting) {
+          deps.push(key);
+        }
+        if (hasOwnKey(child, key)) {
+          return ensureValue(child[key], child);
+        }
+        return ensureValue(parent[key], parent);
+      },
+      set(_, key, value) {
+        if (hasOwnKey(child, key)) {
+          child[key] = value;
+        }
+        else if (hasOwnKey(parent, key)) {
+          parent[key] = value;
+        }
+        else {
+          child[key] = value;
+        }
+        return true;
+      },
+      deleteProperty() {
+        return false;
+      },
+      has(_, key) {
+        if (key in child) {
+          return true;
+        }
+        if (key in parent) {
+          return true;
+        }
+        return false;
+      },
+      ownKeys() {
+        var keys = [];
+        for (var key in child) {
+          keys.push(key);
+        }
+        for (key in parent) {
+          if (keys.indexOf(key) > -1) {
+            continue;
+          }
+          keys.push(key);
+        }
+        return keys;
+      },
+      getOwnPropertyDescriptor() {
+        return {
+          enumerable: true,
+          configurable: true,
+        };
+      }
+    });
+  }
 
   if (chain) {
     data = new Proxy({}, {
       get(_, key) {
+        if (collecting) {
+          deps.push(key);
+        }
         for (var i = 0, len = chain.length; i < len; i ++) {
-          var attr = chain[i];
+          var item = chain[i];
+          var isObj = typeof item === 'object';
+          var attr = isObj ? item.key : item;
           var env = scopeVars[attr];
           if (!env) {
             continue;
           }
 
-          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          var vars = isObj && item.getter ? item.getter(env) : env;
           if (key in vars) {
             var value = ensureValue(vars[key], vars);
             return value;
@@ -2679,20 +2751,27 @@ function createScope(scopeVars, options) {
         var bottom;
 
         for (var i = 0, len = chain.length; i < len; i ++) {
-          var attr = chain[i];
+          var item = chain[i];
+          var isObj = typeof item === 'object';
+          var attr = isObj ? item.key : item;
           var env = scopeVars[attr];
           if (!env) {
             continue;
           }
 
-          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          var vars = isObj && item.getter ? item.getter(env) : env;
 
           if (!bottom) {
             bottom = vars;
           }
 
           if (key in vars) {
-            vars[key] = value;
+            if (isObj && item.setter) {
+              item.setter(key, value, vars, env);
+            }
+            else {
+              vars[key] = value;
+            }
             return true;
           }
         }
@@ -2708,13 +2787,15 @@ function createScope(scopeVars, options) {
       },
       has(_, key) {
         for (var i = 0, len = chain.length; i < len; i ++) {
-          var attr = chain[i];
+          var item = chain[i];
+          var isObj = typeof item === 'object';
+          var attr = isObj ? item.key : item;
           var env = scopeVars[attr];
           if (!env) {
             continue;
           }
 
-          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          var vars = isObj && item.getter ? item.getter(env) : env;
           if (key in vars) {
             return true;
           }
@@ -2724,24 +2805,20 @@ function createScope(scopeVars, options) {
       ownKeys() {
         var keys = [];
         for (var i = 0, len = chain.length; i < len; i ++) {
-          var attr = chain[i];
+          var item = chain[i];
+          var isObj = typeof item === 'object';
+          var attr = isObj ? item.key : item;
           var env = scopeVars[attr];
           if (!env) {
             continue;
           }
 
-          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          var vars = isObj && item.getter ? item.getter(env) : env;
           for (var key in vars) {
             keys.push(key);
           }
         }
-        var fkeys = keys.reduce(function(fkeys, key) {
-          if (fkeys.indexOf(key) > -1) {
-            return fkeys;
-          }
-          fkeys.push(key);
-          return fkeys;
-        }, []);
+        var fkeys = uniqueArray(keys);
         return fkeys;
       },
       getOwnPropertyDescriptor() {
@@ -2751,6 +2828,9 @@ function createScope(scopeVars, options) {
         };
       }
     });
+  }
+  else {
+    data = inheritFrom({}, scopeVars);
   }
 
   var scope = new ScopeX(data, opts);
@@ -2764,60 +2844,6 @@ function createScope(scopeVars, options) {
     });
   }
   else {
-    function inheritFrom(child, parent) {
-      return new Proxy({}, {
-        get(_, key) {
-          if (hasOwnKey(child, key)) {
-            return ensureValue(child[key], child);
-          }
-          return ensureValue(parent[key], parent);
-        },
-        set(_, key, value) {
-          if (hasOwnKey(child, key)) {
-            child[key] = value;
-          }
-          else if (hasOwnKey(parent, key)) {
-            parent[key] = value;
-          }
-          else {
-            child[key] = value;
-          }
-          return true;
-        },
-        deleteProperty() {
-          return false;
-        },
-        has(_, key) {
-          if (key in child) {
-            return true;
-          }
-          if (key in parent) {
-            return true;
-          }
-          return false;
-        },
-        ownKeys() {
-          var keys = [];
-          for (var key in child) {
-            keys.push(key);
-          }
-          for (key in parent) {
-            if (keys.indexOf(key) > -1) {
-              continue;
-            }
-            keys.push(key);
-          }
-          return keys;
-        },
-        getOwnPropertyDescriptor() {
-          return {
-            enumerable: true,
-            configurable: true,
-          };
-        }
-      });
-    }
-
     Object.defineProperty(scope, '$new', {
       value: function(locals) {
         var sub = inheritFrom(locals, data);
@@ -2825,6 +2851,22 @@ function createScope(scopeVars, options) {
       }
     });
   }
+
+  var parse = scope.parse.bind(scope);
+  Object.defineProperty(scope, 'parse', {
+    value: function(exp, fn) {
+      if (fn) {
+        collecting = true;
+      }
+      var res = parse(exp);
+      if (fn) {
+        fn(uniqueArray(deps));
+        deps.length = 0;
+        collecting = false;
+      }
+      return res;
+    }
+  });
 
   return scope;
 }

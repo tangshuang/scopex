@@ -118,3 +118,18 @@ expect(scope.parse('w')).toBe(5)
 ```
 
 Different from `new ScopeX(vars)`, `$new()` is overried by `createScope`, values will not follow prototype partten. The given vars will be treated as one whole thing, change properties will change the ones who has these properties (unless no one the the property, the latest one will be set). Look into unit test to know about this.
+
+`parse` is overrided by `createScope`, it receive two parameters:
+
+```
+scope.parse(exp: string, collect: Function)
+```
+
+You can use the second parameter function to collect which keys are called during parsing, for example:
+
+```js
+const o = { a: 1 }
+const scope = createScope(o)
+
+const a = scope.parse('a', (deps) => console.log(deps)) // -> ['a'] -> 'a' property is called during parsing
+```

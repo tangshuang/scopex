@@ -188,7 +188,7 @@ describe('createScope', () => {
     }
     const chain = ['a', 'b', 'c']
 
-    const scope = ScopeX.createScope(vars, { chain })
+    const scope = createScope(vars, { chain })
     expect(scope.parse('s')).toBe(1)
     expect(scope.parse('z')).toBe(3)
     expect(scope.parse('w')).toBe(5)
@@ -270,5 +270,23 @@ describe('createScope', () => {
     expect(subscope.parse('s')).toBe(1)
     expect(subscope.parse('z')).toBe(13)
     expect(subscope.parse('w')).toBe(5)
+  })
+
+  test('collect', () => {
+    const a = {
+      b: {
+        c: 1,
+      }
+    }
+
+    const scope = createScope(a)
+    let count = 0
+    let deps = null
+    scope.parse('b.c = 2', (keys) => {
+      count ++
+      deps = keys
+    })
+    expect(count).toBe(1)
+    expect(deps).toEqual(['b'])
   })
 })
