@@ -85,7 +85,7 @@ const output = scope.interpolate(`
 
 The `output` will transform {{title}} and {{name}} to truthy value in string.
 
-### static createScope(vars: object, chain: string[]): ScopeX
+### static createScope(vars: object, options: { chain: string[], filters: Function[] }): ScopeX
 
 ```js
 const { createScope } = ScopeX
@@ -116,3 +116,5 @@ expect(scope.parse('s')).toBe(1)
 expect(scope.parse('z')).toBe(3)
 expect(scope.parse('w')).toBe(5)
 ```
+
+Different from `new ScopeX(vars)`, `$new()` is overried by `createScope`, values will not follow prototype partten. The given vars will be treated as one whole thing, change properties will change the ones who has these properties (unless no one the the property, the latest one will be set). Look into unit test to know about this.

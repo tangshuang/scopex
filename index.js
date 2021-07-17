@@ -261,40 +261,6 @@ function setHashKey(obj, h) {
   }
 }
 
-function baseExtend(dst, objs, deep) {
-  var h = dst.$$hashKey;
-
-  for (var i = 0, ii = objs.length; i < ii; ++i) {
-    var obj = objs[i];
-    if (!isObject(obj) && !isFunction(obj)) continue;
-    var keys = Object.keys(obj);
-    for (var j = 0, jj = keys.length; j < jj; j++) {
-      var key = keys[j];
-      var src = obj[key];
-
-      if (deep && isObject(src)) {
-        if (isDate(src)) {
-          dst[key] = new Date(src.valueOf());
-        } else if (isRegExp(src)) {
-          dst[key] = new RegExp(src);
-        } else if (src.nodeName) {
-          dst[key] = src.cloneNode(true);
-        } else if (isElement(src)) {
-          dst[key] = src.clone();
-        } else {
-          if (!isObject(dst[key])) dst[key] = isArray(src) ? [] : {};
-          baseExtend(dst[key], [src], true);
-        }
-      } else {
-        dst[key] = src;
-      }
-    }
-  }
-
-  setHashKey(dst, h);
-  return dst;
-}
-
 /**
  * @ngdoc function
  * @name angular.noop
@@ -413,22 +379,6 @@ function isNumber(value) {
 
 /**
  * @ngdoc function
- * @name angular.isDate
- * @module ng
- * @kind function
- *
- * @description
- * Determines if a value is a date.
- *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Date`.
- */
-function isDate(value) {
-  return toString.call(value) === "[object Date]";
-}
-
-/**
- * @ngdoc function
  * @name angular.isFunction
  * @module ng
  * @kind function
@@ -441,17 +391,6 @@ function isDate(value) {
  */
 function isFunction(value) {
   return typeof value === "function";
-}
-
-/**
- * Determines if a value is a regular expression object.
- *
- * @private
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `RegExp`.
- */
-function isRegExp(value) {
-  return toString.call(value) === "[object RegExp]";
 }
 
 /**
@@ -481,27 +420,6 @@ function isTypedArray(value) {
 function isArrayBuffer(obj) {
   return toString.call(obj) === "[object ArrayBuffer]";
 }
-
-/**
- * @ngdoc function
- * @name angular.isElement
- * @module ng
- * @kind function
- *
- * @description
- * Determines if a reference is a DOM element (or wrapped jQuery element).
- *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a DOM element (or wrapped jQuery element).
- */
-function isElement(node) {
-  return !!(
-    node &&
-    (node.nodeName || // We are a direct element.
-      (node.prop && node.attr && node.find))
-  ); // We have an on and find method part of jQuery API.
-}
-
 
 /**
  * @ngdoc function
@@ -2682,17 +2600,23 @@ ScopeX.prototype.interpolate = function(str) {
 
 ScopeX.prototype.$new = function(locals) {
   locals = locals || {};
-  var data = assign({}, locals);
-  setPrototypeOf(data, this.data);
+  var data = isAbsObject(locals) ? setPrototypeOf(locals, this.data) : assign({}, locals);
   var scopex = new ScopeX(data, this.options);
   assign(scopex.filters, this.filters);
   return scopex;
 };
 
+function isAbsObject(value) {
+  return value && typeof value === 'object' && value.constructor === Object
+}
+
+function hasOwnKey(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
 
 function assign(a, b) {
   for (var i in b) {
-    if (Object.prototype.hasOwnProperty.call(b, i)) {
+    if (hasOwnKey(b, i)) {
       a[i] = b[i];
     }
   }
@@ -2706,7 +2630,10 @@ function setPrototypeOf(obj, proto) {
   else {
     obj.__proto__ = proto;
   }
+  return obj
 }
+
+ScopeX.createScope = createScope;
 
 /**
  * @param {object} scopeVars
@@ -2714,108 +2641,190 @@ function setPrototypeOf(obj, proto) {
  * @param {object} getters
  * @returns new ScopeX()
  */
-ScopeX.createScope = function(scopeVars, chain, getters) {
-  chain = chain || ['data'];
-  var data = new Proxy({}, {
-    get(_, key) {
-      var value;
-      var target;
+function createScope(scopeVars, options) {
+  options = options || {};
+  var chain = options.chain;
+  var getters = options.getters;
+  var opts = assign({}, options);
+  delete opts.chain;
+  delete opts.getters;
 
-      for (var i = 0, len = chain.length; i < len; i ++) {
-        var attr = chain[i];
-        var env = scopeVars[attr];
-        if (!env) {
-          continue;
+  function ensureValue(value, target) {
+    if (value && typeof value === 'function') {
+      return value.bind(target);
+    }
+    return value;
+  }
+
+  var data = scopeVars;
+
+  if (chain) {
+    data = new Proxy({}, {
+      get(_, key) {
+        for (var i = 0, len = chain.length; i < len; i ++) {
+          var attr = chain[i];
+          var env = scopeVars[attr];
+          if (!env) {
+            continue;
+          }
+
+          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          if (key in vars) {
+            var value = ensureValue(vars[key], vars);
+            return value;
+          }
+        }
+      },
+      set(_, key, value) {
+        var bottom;
+
+        for (var i = 0, len = chain.length; i < len; i ++) {
+          var attr = chain[i];
+          var env = scopeVars[attr];
+          if (!env) {
+            continue;
+          }
+
+          var vars = getters && getters[attr] ? getters[attr](env) : env;
+
+          if (!bottom) {
+            bottom = vars;
+          }
+
+          if (key in vars) {
+            vars[key] = value;
+            return true;
+          }
         }
 
-        var vars = getters && getters[attr] ? getters[attr](env) : env;
-        if (key in vars) {
-          value = vars[key];
-          target = vars;
-          break;
-        }
-      }
-
-      if (value && typeof value === 'function') {
-        return value.bind(target);
-      }
-      return value;
-    },
-    set(_, key, value) {
-      var bottom;
-
-      for (var i = 0, len = chain.length; i < len; i ++) {
-        var attr = chain[i];
-        var env = scopeVars[attr];
-        if (!env) {
-          continue;
+        if (bottom) {
+          bottom[key] = value;
         }
 
-        var vars = getters && getters[attr] ? getters[attr](env) : env;
+        return true;
+      },
+      deleteProperty() {
+        return false;
+      },
+      has(_, key) {
+        for (var i = 0, len = chain.length; i < len; i ++) {
+          var attr = chain[i];
+          var env = scopeVars[attr];
+          if (!env) {
+            continue;
+          }
 
-        if (!bottom) {
-          bottom = vars;
+          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          if (key in vars) {
+            return true;
+          }
         }
+        return false;
+      },
+      ownKeys() {
+        var keys = [];
+        for (var i = 0, len = chain.length; i < len; i ++) {
+          var attr = chain[i];
+          var env = scopeVars[attr];
+          if (!env) {
+            continue;
+          }
 
-        if (key in vars) {
-          vars[key] = value;
-          return true;
+          var vars = getters && getters[attr] ? getters[attr](env) : env;
+          for (var key in vars) {
+            keys.push(key);
+          }
         }
-      }
-
-      bottom[key] = value;
-      return true;
-    },
-    deleteProperty() {
-      return false;
-    },
-    has(_, key) {
-      for (var i = 0, len = chain.length; i < len; i ++) {
-        var attr = chain[i];
-        var env = scopeVars[attr];
-        if (!env) {
-          continue;
-        }
-
-        var vars = getters && getters[attr] ? getters[attr](env) : env;
-        if (key in vars) {
-          return true;
-        }
-      }
-      return false;
-    },
-    ownKeys() {
-      var keys = [];
-      for (var i = 0, len = chain.length; i < len; i ++) {
-        var attr = chain[i];
-        var env = scopeVars[attr];
-        if (!env) {
-          continue;
-        }
-
-        var vars = getters && getters[attr] ? getters[attr](env) : env;
-        var okeys = Object.keys(vars);
-        keys.push(...okeys);
-      }
-      var fkeys = keys.reduce(function(fkeys, key) {
-        if (fkeys.indexOf(key) > -1) {
-          return;
-        }
-        fkeys.push(key);
+        var fkeys = keys.reduce(function(fkeys, key) {
+          if (fkeys.indexOf(key) > -1) {
+            return fkeys;
+          }
+          fkeys.push(key);
+          return fkeys;
+        }, []);
         return fkeys;
-      }, []);
-      return fkeys;
-    }
-  });
+      },
+      getOwnPropertyDescriptor() {
+        return {
+          enumerable: true,
+          configurable: true,
+        };
+      }
+    });
+  }
 
-  var scope = new ScopeX(data);
-  scope.vars = scopeVars;
-  Object.defineProperty(scope, '$new', {
-    value: function(locals) {
-      Object.setPrototypeOf(locals, scopeVars);
-      return createScope(locals);
+  var scope = new ScopeX(data, opts);
+  if (chain) {
+    scope.vars = scopeVars;
+    Object.defineProperty(scope, '$new', {
+      value: function(locals) {
+        var sub = setPrototypeOf(locals, scopeVars);
+        return createScope(sub, options);
+      }
+    });
+  }
+  else {
+    function inheritFrom(child, parent) {
+      return new Proxy({}, {
+        get(_, key) {
+          if (hasOwnKey(child, key)) {
+            return ensureValue(child[key], child);
+          }
+          return ensureValue(parent[key], parent);
+        },
+        set(_, key, value) {
+          if (hasOwnKey(child, key)) {
+            child[key] = value;
+          }
+          else if (hasOwnKey(parent, key)) {
+            parent[key] = value;
+          }
+          else {
+            child[key] = value;
+          }
+          return true;
+        },
+        deleteProperty() {
+          return false;
+        },
+        has(_, key) {
+          if (key in child) {
+            return true;
+          }
+          if (key in parent) {
+            return true;
+          }
+          return false;
+        },
+        ownKeys() {
+          var keys = [];
+          for (var key in child) {
+            keys.push(key);
+          }
+          for (key in parent) {
+            if (keys.indexOf(key) > -1) {
+              continue;
+            }
+            keys.push(key);
+          }
+          return keys;
+        },
+        getOwnPropertyDescriptor() {
+          return {
+            enumerable: true,
+            configurable: true,
+          };
+        }
+      });
     }
-  });
+
+    Object.defineProperty(scope, '$new', {
+      value: function(locals) {
+        var sub = inheritFrom(locals, data);
+        return createScope(sub, options);
+      }
+    });
+  }
 
   return scope;
 }

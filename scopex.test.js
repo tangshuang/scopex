@@ -1,4 +1,4 @@
-const { ScopeX } = require('./index')
+const { ScopeX, createScope } = require('./index')
 const { Objext } = require('objext')
 
 describe('Normal Usage', () => {
@@ -157,7 +157,21 @@ describe('not enum keys', () => {
 })
 
 describe('createScope', () => {
-  test('normal', () => {
+  test('nomal', () => {
+    const a = {
+      b: {
+        c: 1,
+      }
+    }
+
+    const scope = createScope(a)
+    expect(scope.parse('b.c')).toBe(1)
+
+    scope.assign('b.c', 2)
+    expect(a.b.c).toBe(2)
+  })
+
+  test('chain', () => {
     const vars = {
       a: {
         s: 1,
@@ -174,7 +188,7 @@ describe('createScope', () => {
     }
     const chain = ['a', 'b', 'c']
 
-    const scope = ScopeX.createScope(vars, chain)
+    const scope = ScopeX.createScope(vars, { chain })
     expect(scope.parse('s')).toBe(1)
     expect(scope.parse('z')).toBe(3)
     expect(scope.parse('w')).toBe(5)
@@ -187,5 +201,74 @@ describe('createScope', () => {
 
     scope.parse('t = 5')
     expect(vars.a.t).toBe(5)
+  })
+
+  test('inherit', () => {
+    const a = {
+      x: 1,
+    }
+    const b = {
+      x: 2,
+      y: 3,
+    }
+    const c = {
+      x: 4,
+      y: 5,
+      z: 6,
+    }
+
+    const scope = createScope(c)
+    expect(scope.parse('x')).toBe(4)
+    expect(scope.parse('y')).toBe(5)
+    expect(scope.parse('z')).toBe(6)
+
+    const subscope = scope.$new(b)
+    expect(subscope.parse('x')).toBe(2)
+    expect(subscope.parse('y')).toBe(3)
+    expect(subscope.parse('z')).toBe(6)
+
+    const ascope = subscope.$new(a)
+    expect(ascope.parse('x')).toBe(1)
+    expect(ascope.parse('y')).toBe(3)
+    expect(ascope.parse('z')).toBe(6)
+
+    ascope.assign('x', 12)
+    ascope.assign('y', 13)
+    ascope.assign('z', 14)
+    expect(a.x).toBe(12)
+    expect(b.y).toBe(13)
+    expect(c.z).toBe(14)
+  })
+
+  test('chain inherit', () => {
+    const vars = {
+      a: {
+        s: 1,
+      },
+      b: {
+        s: 2,
+        z: 3
+      },
+      c: {
+        s: 3,
+        z: 4,
+        w: 5,
+      },
+    }
+    const chain = ['x', 'a', 'b', 'c']
+
+    const scope = createScope(vars, { chain })
+    expect(scope.parse('s')).toBe(1)
+    expect(scope.parse('z')).toBe(3)
+    expect(scope.parse('w')).toBe(5)
+
+    const subscope = scope.$new({
+      x: {
+        z: 13,
+      },
+    })
+    expect(subscope.parse('s')).toBe(1)
+    expect(subscope.parse('z')).toBe(13)
+    expect(subscope.parse('w')).toBe(5)
   })
 })
