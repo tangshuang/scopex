@@ -4,6 +4,7 @@
   if (typeof exports !== 'undefined') {
     exports.default = ScopeX;
     exports.ScopeX = ScopeX;
+    exports.createScope = ScopeX.createScope;
     exports.__esModule = true;
   }
   // in browser
@@ -2714,6 +2715,7 @@ function setPrototypeOf(obj, proto) {
  * @returns new ScopeX()
  */
 ScopeX.createScope = function(scopeVars, chain, getters) {
+  chain = chain || ['data'];
   var data = new Proxy({}, {
     get(_, key) {
       var value;
@@ -2748,22 +2750,20 @@ ScopeX.createScope = function(scopeVars, chain, getters) {
         if (!env) {
           continue;
         }
-        if (getters && getters[attr]) {
-          continue;
-        }
+
+        var vars = getters && getters[attr] ? getters[attr](env) : env;
 
         if (!bottom) {
-          bottom = env;
+          bottom = vars;
         }
 
-        if (key in env) {
-          env[key] = value;
+        if (key in vars) {
+          vars[key] = value;
           return true;
         }
       }
 
       bottom[key] = value;
-
       return true;
     },
     deleteProperty() {
@@ -2811,7 +2811,7 @@ ScopeX.createScope = function(scopeVars, chain, getters) {
   var scope = new ScopeX(data);
   scope.vars = scopeVars;
   Object.defineProperty(scope, '$new', {
-    value: function (locals) {
+    value: function(locals) {
       Object.setPrototypeOf(locals, scopeVars);
       return createScope(locals);
     }

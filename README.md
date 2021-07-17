@@ -18,12 +18,21 @@ const normalExpressionResult = scope.parse('1 + 1') // 2
 const scopeExpressionResult = scope.parse('key + 1') // if context.key = 1, result is 2, here key stands for context.key
 ```
 
+With cdn:
+
+```html
+<script src="https://unpkg.com/scopex"></script>
+<script>
+  const scope = new ScopeX(context)
+</script>
+```
+
 ## context
 
-A context is a js object, if you not passed, it will use `global` or `window` as optional. i.e.
+A context is a js object, default as `{}`.
 
 ```js
-const scope = new ScopeX() // global or window passed as default
+const scope = new ScopeX()
 ```
 
 What's a scope? It is an object which will be used as master in parsed string, for example:
@@ -38,6 +47,7 @@ Variables in parsed string will be treated as a property (or deep property) of c
 
 ### filter(name, fn)
 
+Register a filter.
 To use like `'book.name | toUpperCase'` in your code, you should use `filter` method to add a filter to your instance:
 
 ```js
@@ -62,7 +72,7 @@ Quick way to set value on conteext:
 scope.assign('members[1].name', 'tomy') // conteext.members[1].name = tomy, even though conteext.members[1] is undefined, this will work.
 ```
 
-### interpolate(str)
+### interpolate(str): str
 
 Transform a string which contains '{{exp}}' to truthy value string. i.e.
 
@@ -74,3 +84,35 @@ const output = scope.interpolate(`
 ```
 
 The `output` will transform {{title}} and {{name}} to truthy value in string.
+
+### static createScope(vars: object, chain: string[]): ScopeX
+
+```js
+const { createScope } = ScopeX
+const scope = createScope({ data: context })
+```
+
+Use `createScope` to create a scope call properties from chain.
+
+```js
+const vars = {
+  a: {
+    s: 1,
+  },
+  b: {
+    s: 2,
+    z: 3
+  },
+  c: {
+    s: 3,
+    z: 4,
+    w: 5,
+  },
+}
+const chain = ['a', 'b', 'c']
+
+const scope = ScopeX.createScope(vars, chain)
+expect(scope.parse('s')).toBe(1)
+expect(scope.parse('z')).toBe(3)
+expect(scope.parse('w')).toBe(5)
+```
