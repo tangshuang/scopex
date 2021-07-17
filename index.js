@@ -820,7 +820,7 @@ function minErr(module, ErrorConstructor) {
     });
 
     message +=
-      '\nhttp://errors.angularjs.org/"NG_VERSION_FULL"/' +
+      '\nhttp://errors.angularjs.org/1.6.9/' +
       (module ? module + "/" : "") +
       code;
 
