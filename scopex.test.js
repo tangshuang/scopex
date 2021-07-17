@@ -273,20 +273,19 @@ describe('createScope', () => {
   })
 
   test('collect', () => {
-    const a = {
-      b: {
-        c: 1,
-      }
+    const o = {
+      x: 1,
+      y: 2,
     }
 
-    const scope = createScope(a)
+    const scope = createScope(o)
     let count = 0
     let deps = null
-    scope.parse('b.c = 2', (keys) => {
+    scope.parse('x + y + z', (keys) => {
       count ++
       deps = keys
     })
     expect(count).toBe(1)
-    expect(deps).toEqual(['b'])
+    expect(deps).toEqual(['x', 'y']) // -> z is not in scope
   })
 })

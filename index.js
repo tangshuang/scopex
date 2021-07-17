@@ -2671,19 +2671,23 @@ function createScope(scopeVars, options) {
   function inheritFrom(child, parent) {
     return new Proxy({}, {
       get(_, key) {
-        if (collecting) {
+        var keyInChild = key in child;
+        var keyInParent = key in parent;
+        if (collecting && (keyInChild || keyInParent)) {
           deps.push(key);
         }
-        if (hasOwnKey(child, key)) {
+        if (keyInChild) {
           return ensureValue(child[key], child);
         }
-        return ensureValue(parent[key], parent);
+        if (keyInParent) {
+          return ensureValue(parent[key], parent);
+        }
       },
       set(_, key, value) {
-        if (hasOwnKey(child, key)) {
+        if (key in child) {
           child[key] = value;
         }
-        else if (hasOwnKey(parent, key)) {
+        else if (key in parent) {
           parent[key] = value;
         }
         else {
@@ -2728,9 +2732,6 @@ function createScope(scopeVars, options) {
   if (chain) {
     data = new Proxy({}, {
       get(_, key) {
-        if (collecting) {
-          deps.push(key);
-        }
         for (var i = 0, len = chain.length; i < len; i ++) {
           var item = chain[i];
           var isObj = typeof item === 'object';
@@ -2742,6 +2743,9 @@ function createScope(scopeVars, options) {
 
           var vars = isObj && item.getter ? item.getter(env) : env;
           if (key in vars) {
+            if (collecting) {
+              deps.push(key);
+            }
             var value = ensureValue(vars[key], vars);
             return value;
           }
