@@ -1,6 +1,6 @@
 {
   "name": "scopex",
-  "version": "4.3.2",
+  "version": "4.3.3",
   "description": "A javascript eexpression compiler based on angular-expressions.",
   "main": "index.js",
   "scripts": {
