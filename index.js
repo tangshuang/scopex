@@ -2670,7 +2670,7 @@ function createScope(scopeVars, options) {
 
   function inheritFrom(child, parent) {
     return new Proxy({}, {
-      get(_, key) {
+      get: function(_, key) {
         var keyInChild = key in child;
         var keyInParent = key in parent;
         if (collecting && (keyInChild || keyInParent)) {
@@ -2683,7 +2683,7 @@ function createScope(scopeVars, options) {
           return ensureValue(parent[key], parent);
         }
       },
-      set(_, key, value) {
+      set: function(_, key, value) {
         if (key in child) {
           child[key] = value;
         }
@@ -2695,10 +2695,10 @@ function createScope(scopeVars, options) {
         }
         return true;
       },
-      deleteProperty() {
+      deleteProperty: function() {
         return false;
       },
-      has(_, key) {
+      has: function(_, key) {
         if (key in child) {
           return true;
         }
@@ -2707,7 +2707,7 @@ function createScope(scopeVars, options) {
         }
         return false;
       },
-      ownKeys() {
+      ownKeys: function() {
         var keys = [];
         for (var key in child) {
           keys.push(key);
@@ -2720,7 +2720,7 @@ function createScope(scopeVars, options) {
         }
         return keys;
       },
-      getOwnPropertyDescriptor() {
+      getOwnPropertyDescriptor: function() {
         return {
           enumerable: true,
           configurable: true,
@@ -2731,7 +2731,7 @@ function createScope(scopeVars, options) {
 
   if (chain) {
     data = new Proxy({}, {
-      get(_, key) {
+      get: function(_, key) {
         for (var i = 0, len = chain.length; i < len; i ++) {
           var item = chain[i];
           var isObj = typeof item === 'object';
@@ -2751,7 +2751,7 @@ function createScope(scopeVars, options) {
           }
         }
       },
-      set(_, key, value) {
+      set: function(_, key, value) {
         var bottom;
 
         for (var i = 0, len = chain.length; i < len; i ++) {
@@ -2786,10 +2786,10 @@ function createScope(scopeVars, options) {
 
         return true;
       },
-      deleteProperty() {
+      deleteProperty: function() {
         return false;
       },
-      has(_, key) {
+      has: function(_, key) {
         for (var i = 0, len = chain.length; i < len; i ++) {
           var item = chain[i];
           var isObj = typeof item === 'object';
@@ -2806,7 +2806,7 @@ function createScope(scopeVars, options) {
         }
         return false;
       },
-      ownKeys() {
+      ownKeys: function() {
         var keys = [];
         for (var i = 0, len = chain.length; i < len; i ++) {
           var item = chain[i];
@@ -2825,7 +2825,7 @@ function createScope(scopeVars, options) {
         var fkeys = uniqueArray(keys);
         return fkeys;
       },
-      getOwnPropertyDescriptor() {
+      getOwnPropertyDescriptor: function() {
         return {
           enumerable: true,
           configurable: true,
