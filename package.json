@@ -18,6 +18,7 @@
   "homepage": "https://github.com/tangshuang/scopex#readme",
   "devDependencies": {
     "jest": "^23.6.0",
-    "objext": "0.0.5"
+    "objext": "0.0.5",
+    "ts-fns": "^10.9.2"
   }
 }

@@ -1,5 +1,6 @@
 const { ScopeX, createScope } = require('./index')
 const { Objext } = require('objext')
+const { createProxy } = require('ts-fns')
 
 describe('Normal Usage', () => {
   const scope = new ScopeX({
@@ -287,5 +288,30 @@ describe('createScope', () => {
     })
     expect(count).toBe(1)
     expect(deps).toEqual(['x', 'y']) // -> z is not in scope
+  })
+
+  test('Proxy', () => {
+    let count = 0
+    const obj = {
+      body: {},
+    }
+    const proxy = createProxy(obj, {
+      enumerable: () => true,
+      dispatch: (e) => {
+        count ++
+      },
+    })
+    const scope = createScope(proxy)
+
+    expect(scope.parse('a')).toBeUndefined()
+
+    scope.assign('a', '1')
+    expect(proxy.a).toBe('1')
+    expect(obj.a).toBe('1')
+    expect(count).toBe(1)
+
+    proxy.body.age = 10
+    expect(scope.parse('body.age')).toBe(10)
+    expect(count).toBe(2)
   })
 })
